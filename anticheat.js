@@ -1,49 +1,48 @@
-
+const fs = require('fs');
+const path = require('path');
 const { DBSCAN } = require('density-clustering');
 
 // ==========================================
-// 1. GERADOR DE BANCO DE DADOS (1000 JOGADORES)
+// 1. CARREGADOR DE BANCO DE DADOS (CSV FIXO)
 // ==========================================
-function gerarBancoDeDados() {
+function carregarBancoDeDados() {
+    const caminhoArquivo = path.join(__dirname, 'dados_jogadores.csv');
+    
+    // Verifica se o arquivo CSV realmente existe na pasta
+    if (!fs.existsSync(caminhoArquivo)) {
+        console.error(`❌ Erro: O arquivo 'dados_jogadores.csv' não foi encontrado na pasta.`);
+        console.error(`Certifique-se de baixar o arquivo gerado e colocá-lo junto deste script.`);
+        process.exit(1);
+    }
+
+    // Lê o conteúdo do arquivo CSV como string
+    const conteudoCSV = fs.readFileSync(caminhoArquivo, 'utf-8');
+    
+    // Divide por linhas e remove linhas em branco
+    const linhas = conteudoCSV.split('\n').map(linha => line.trim()).filter(linha => linha.length > 0);
+    
+    // Remove o cabeçalho do CSV ('precisao,tempo_reacao')
+    const linhasDeDados = linhas.slice(1);
+
     const dados = [];
 
-    // Função auxiliar para gerar números aleatórios em um intervalo
-    const randomEntre = (min, max) => Math.random() * (max - min) + min;
-
-    // A. Gerando Jogadores Casuais (750 jogadores)
-    // Têm precisão entre 25% e 55% | Tempo de reação entre 220ms e 380ms
-    for (let i = 0; i < 750; i++) {
-        dados.push([
-            Math.round(randomEntre(25, 55)), 
-            Math.round(randomEntre(220, 380))
-        ]);
+    // Converte cada linha em um array de números [precisao, tempo_reacao]
+    for (let linha of linhasDeDados) {
+        const colunas = linha.split(',');
+        const precisao = parseInt(colunas[0], 10);
+        const tempoReacao = parseInt(colunas[1], 10);
+        
+        if (!isNaN(precisao) && !isNaN(tempoReacao)) {
+            dados.push([precisao, tempoReacao]);
+        }
     }
 
-    // B. Gerando Jogadores Profissionais / Pro Players (235 jogadores)
-    // Têm precisão entre 60% e 78% | Tempo de reação entre 150ms e 210ms
-    for (let i = 0; i < 235; i++) {
-        dados.push([
-            Math.round(randomEntre(60, 78)), 
-            Math.round(randomEntre(150, 210))
-        ]);
-    }
-
-    // C. Gerando Cheaters Ocultos (15 jogadores)
-    // Têm precisão sobre-humana (88% a 100%) | Tempo de reação impossível (5ms a 40ms)
-    for (let i = 0; i < 15; i++) {
-        dados.push([
-            Math.round(randomEntre(88, 100)), 
-            Math.round(randomEntre(5, 40))
-        ]);
-    }
-
-    // Embaralhar os dados para simular um banco de dados real vindo do jogo
-    return dados.sort(() => Math.random() - 0.5);
+    return dados;
 }
 
-// Inicializa o banco de dados com os 1000 registros
-const bancoDeDados = gerarBancoDeDados();
-console.log(`✅ Banco de dados gerado com sucesso! Total de registros: ${bancoDeDados.length}\n`);
+// Inicializa o banco de dados carregando o CSV fixo
+const bancoDeDados = carregarBancoDeDados();
+console.log(`✅ Banco de dados carregado com sucesso! Total de registros fixos: ${bancoDeDados.length}\n`);
 
 
 // ==========================================
@@ -56,7 +55,7 @@ const dbscan = new DBSCAN();
 const epsilon = 30; 
 const minPoints = 10; 
 
-console.log("Analisando o comportamento dos jogadores...");
+console.log("Analisando o comportamento dos jogadores baseados no arquivo CSV...");
 const clusters = dbscan.run(bancoDeDados, epsilon, minPoints);
 const anomalias = dbscan.noise;
 
@@ -65,7 +64,7 @@ const anomalias = dbscan.noise;
 // 3. EXIBIÇÃO DOS RESULTADOS DA ANÁLISE
 // ==========================================
 console.log("\n=========================================");
-console.log("       RELATÓRIO DO ANTI-CHEAT          ");
+console.log("       RELATÓRIO DO ANTI-CHEAT (CSV)     ");
 console.log("=========================================");
 console.log(`Grupos de comportamento detectados: ${clusters.length}`);
 console.log(`Total de jogadores legítimos inocentados: ${bancoDeDados.length - anomalias.length}`);
@@ -78,7 +77,7 @@ const amostraCheaters = anomalias.slice(0, 5);
 
 amostraCheaters.forEach((indiceOriginal, i) => {
     const dadosJogador = bancoDeDados[indiceOriginal];
-    console.log(`  [ALERTA #${i+1}] ID do Jogador: ${indiceOriginal} | Precisão: ${dadosJogador[0]}% | Tempo de Reação: ${dadosJogador[1]}ms`);
+    console.log(`  [ALERTA #${i+1}] ID do Linha (CSV): ${indiceOriginal + 2} | Precisão: ${dadosJogador[0]}% | Tempo de Reação: ${dadosJogador[1]}ms`);
 });
 
 if (anomalias.length > 5) {
