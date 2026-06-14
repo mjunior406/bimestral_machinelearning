@@ -2,6 +2,8 @@
 
 Este projeto foi desenvolvido como parte da atividade de Machine Learning. O objetivo é utilizar o algoritmo de agrupamento **DBSCAN** para identificar anomalias (trapaceiros/cheaters) num jogo de FPS, analisando o comportamento de 1.000 jogadores simulados.
 
+---
+
 ## 🚀 Como Executar Diretamente no GitHub (Sem Instalar Nada!)
 
 Podes rodar este projeto diretamente no teu navegador utilizando o **GitHub Codespaces**:
