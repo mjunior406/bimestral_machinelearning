@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detetor de Trapaças - DBSCAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-xl w-full bg-gray-800 p-6 rounded-xl shadow-2xl border border-gray-700">
+        <h1 class="text-2xl font-bold text-red-500 uppercase tracking-wider text-center mb-2">Análise Anti-Cheat (DBSCAN)</h1>
+        <p class="text-gray-400 text-sm text-center mb-6">Insira a telemetria do jogador para testar o algoritmo em tempo real.</p>
+
+        <div class="space-y-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Tempo de Reação Médio (em milissegundos):</label>
+                <input type="number" id="inputX" value="160" class="w-full bg-gray-900 border border-gray-650 rounded p-2 text-white outline-none focus:border-red-500">
+                <span class="text-xs text-gray-500">Humano rápido: ~150ms a 180ms. Bots/Aimbots: <50ms.</span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-400 mb-1">Taxa de Acerto na Cabeça (Headshot %):</label>
+                <input type="number" id="inputY" value="55" class="w-full bg-gray-900 border border-gray-650 rounded p-2 text-white outline-none focus:border-red-500">
+            </div>
+            <button onclick="executarTesteManual()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition text-sm uppercase tracking-wider">
+                Analisar Perfil do Jogador
+            </button>
+        </div>
+
+        <div id="painelResultado" class="p-4 bg-gray-950 rounded border border-gray-700 min-h-24 flex flex-col justify-center items-center text-center">
+            <p class="text-gray-500 italic text-sm">Insira os dados acima para iniciar a varredura estatística.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- MOTOR DBSCAN EM JAVASCRIPT PURO ---
+        class AntiCheatDBSCAN {
+            constructor(eps, minPoints) {
+                this.eps = eps;
+                this.minPoints = minPoints;
+            }
+
+            euclidianDistance(p1, p2) {
+                return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+            }
+
+            regionQuery(dataset, targetIdx) {
+                const neighbors = [];
+                for (let j = 0; j < dataset.length; j++) {
+                    if (this.euclidianDistance(dataset[targetIdx], dataset[j]) <= this.eps) neighbors.push(j);
+                }
+                return neighbors;
+            }
+
+            expandCluster(dataset, labels, pointIdx, neighbors, clusterId) {
+                labels[pointIdx] = clusterId;
+                for (let i = 0; i < neighbors.length; i++) {
+                    let neighborIdx = neighbors[i];
+                    if (labels[neighborIdx] === -1) labels[neighborIdx] = clusterId;
+                    if (labels[neighborIdx] !== 0) continue;
+                    labels[neighborIdx] = clusterId;
+                    let nextNeighbors = this.regionQuery(dataset, neighborIdx);
+                    if (nextNeighbors.length >= this.minPoints) {
+                        for (let j = 0; j < nextNeighbors.length; j++) {
+                            if (!neighbors.includes(nextNeighbors[j])) neighbors.push(nextNeighbors[j]);
+                        }
+                    }
+                }
+            }
+
+            fit(dataset) {
+                const n = dataset.length;
+                const labels = new Array(n).fill(0); 
+                let clusterId = 0;
+                for (let i = 0; i < n; i++) {
+                    if (labels[i] !== 0) continue;
+                    let neighbors = this.regionQuery(dataset, i);
+                    if (neighbors.length < this.minPoints) {
+                        labels[i] = -1;
+                    } else {
+                        clusterId++;
+                        this.expandCluster(dataset, labels, i, neighbors, clusterId);
+                    }
+                }
+                return labels;
+            }
+
+            predictNewPlayer(dataset, currentLabels, newPlayer) {
+                let neighbors = [];
+                for (let i = 0; i < dataset.length; i++) {
+                    if (this.euclidianDistance(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
+                }
+
+                if (neighbors.length === 0) {
+                    return {
+                        status: "CRÍTICO: Trapaça Detectada",
+                        cor: "text-red-500",
+                        desc: "Assinatura biométrica isolada no espaço. Padrão incompatível com densidades humanas normais (Provável Aimbot)."
+                    };
+                }
+
+                let maisProximoIdx = neighbors[0];
+                let menorDistancia = this.euclidianDistance(newPlayer, dataset[neighbors[0]]);
+                for (let k = 1; k < neighbors.length; k++) {
+                    let dist = this.euclidianDistance(newPlayer, dataset[neighbors[k]]);
+                    if (dist < menorDistancia) {
+                        menorDistancia = dist;
+                        maisProximoIdx = neighbors[k];
+                    }
+                }
+
+                const clusterPertencente = currentLabels[maisProximoIdx];
+                if (clusterPertencente === -1) {
+                    return {
+                        status: "SUSPEITO: Comportamento Instável",
+                        cor: "text-yellow-500",
+                        desc: "O jogador está muito próximo a perfis que já foram sinalizados como ruído/anomalias."
+                    };
+                } else {
+                    return {
+                        status: "VERIFICADO: Jogador Comum",
+                        cor: "text-green-400",
+                        desc: "A telemetria inserida se adequa perfeitamente a um agrupamento denso de usuários legítimos."
+                    };
+                }
+            }
+        }
+
+        // --- DADOS DO SERVIDOR PARA TREINAMENTO ---
+        const baseHistorica = [
+            { x: 260, y: 15 }, { x: 280, y: 18 }, { x: 240, y: 12 }, { x: 290, y: 22 }, { x: 250, y: 20 }, // Casuais
+            { x: 160, y: 55 }, { x: 175, y: 60 }, { x: 150, y: 52 }, { x: 180, y: 65 }, { x: 165, y: 58 }, // Profissionais
+            { x: 12,  y: 98 }, { x: 390, y: 4  } // Cheaters históricos (Ruído)
+        ];
+
+        const detector = new AntiCheatDBSCAN(35, 4);
+        const rotulos = detector.fit(baseHistorica);
+
+        // --- FUNÇÃO QUE CONECTA O FORMULÁRIO AO MODELO ---
+        function executarTesteManual() {
+            const x = parseFloat(document.getElementById('inputX').value);
+            const y = parseFloat(document.getElementById('inputY').value);
+            
+            const novoJogador = { x, y };
+            const resultado = detector.predictNewPlayer(baseHistorica, rotulos, novoJogador);
+
+            const painel = document.getElementById('painelResultado');
+            painel.innerHTML = `
+                <h3 class="font-bold text-lg ${resultado.cor}">${resultado.status}</h3>
+                <p class="text-xs text-gray-300 mt-1 max-w-sm">${resultado.desc}</p>
+            `;
+        }
+    </script>
+</body>
+</html>
