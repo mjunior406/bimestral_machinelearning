@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORANT // Anti-Cheat Protocol (DBSCAN)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#11141a] text-gray-200 font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">
+        
+        <div class="absolute top-0 right-0 bg-[#ff4655] text-[#11141a] text-[10px] font-black px-3 py-0.5 uppercase tracking-widest">
+            vanguard // dbs-02
+        </div>
+
+        <div class="mb-6 border-b border-gray-700 pb-4">
+            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Protocolo de Integridade // VALORANT</h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Análise Tridimensional: Reação (ms) × Headshot (%) × Reports</p>
+        </div>
+
+        <div class="space-y-4 mb-6 bg-[#121820] p-4 border border-gray-800">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                <span class="w-1.5 h-1.5 bg-[#ff4655]"></span> Injetar Telemetria de Teste
+            </h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Tempo de Reação (ms):</label>
+                    <input type="number" id="inputX" value="145" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Taxa de HS (%):</label>
+                    <input type="number" id="inputY" value="48" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Reports Recebidos:</label>
+                    <input type="number" id="inputZ" value="2" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                </div>
+            </div>
+
+            <button onclick="verificarJogador()" class="w-full bg-[#ff4655] hover:bg-[#e63e4b] text-white font-black py-2.5 px-4 rounded-none transition text-xs uppercase tracking-widest mt-2 border border-[#ff4655]">
+                Executar Varredura Tridimensional
+            </button>
+        </div>
+
+        <div class="border border-gray-800 bg-[#0f141c] p-4 min-h-[120px] flex flex-col justify-center">
+            <div id="resultadoTerminal" class="font-mono text-xs space-y-1.5">
+                <p class="text-gray-500 text-center italic">Aguardando telemetria do ambiente de partida...</p>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[10px] text-gray-500 font-mono uppercase">
+            <span>Algoritmo: DBSCAN (JavaScript)</span>
+            <span>Status: Pronto para Apresentação</span>
+        </div>
+    </div>
+
+    <script>
+        // --- CORE ENGINE DO DBSCAN APLICADO A VALORANT ---
+        class VanguardDBSCAN {
+            constructor(eps, minPoints) {
+                this.eps = eps;
+                this.minPoints = minPoints;
+            }
+
+            // Distância Euclidiana em Espaço 3D (X: Reação, Y: HS%, Z: Reports)
+            distance3D(p1, p2) {
+                return Math.sqrt(
+                    Math.pow(p1.x - p2.x, 2) + 
+                    Math.pow(p1.y - p2.y, 2) + 
+                    Math.pow(p1.z - p2.z, 2)
+                );
+            }
+
+            regionQuery(dataset, targetIdx) {
+                const neighbors = [];
+                for (let j = 0; j < dataset.length; j++) {
+                    if (this.distance3D(dataset[targetIdx], dataset[j]) <= this.eps) {
+                        neighbors.push(j);
+                    }
+                }
+                return neighbors;
+            }
+
+            expandCluster(dataset, labels, pointIdx, neighbors, clusterId) {
+                labels[pointIdx] = clusterId;
+                for (let i = 0; i < neighbors.length; i++) {
+                    let neighborIdx = neighbors[i];
+                    if (labels[neighborIdx] === -1) labels[neighborIdx] = clusterId;
+                    if (labels[neighborIdx] !== 0) continue;
+                    
+                    labels[neighborIdx] = clusterId;
+                    let nextNeighbors = this.regionQuery(dataset, neighborIdx);
+                    if (nextNeighbors.length >= this.minPoints) {
+                        for (let j = 0; j < nextNeighbors.length; j++) {
+                            if (!neighbors.includes(nextNeighbors[j])) {
+                                neighbors.push(nextNeighbors[j]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Varre a população do servidor para mapear as densidades legítimas
+            fit(dataset) {
+                const n = dataset.length;
+                const labels = new Array(n).fill(0); // 0 = Não visitado, -1 = Ruído, >0 = Cluster ID
+                let clusterId = 0;
+
+                for (let i = 0; i < n; i++) {
+                    if (labels[i] !== 0) continue;
+                    let neighbors = this.regionQuery(dataset, i);
+                    if (neighbors.length < this.minPoints) {
+                        labels[i] = -1; // Ruído/Anomalia inicial
+                    } else {
+                        clusterId++;
+                        this.expandCluster(dataset, labels, i, neighbors, clusterId);
+                    }
+                }
+                return labels;
+            }
+
+            // Classifica o input manual dinâmico enviado na apresentação
+            predictNewPlayer(dataset, currentLabels, newPlayer) {
+                let neighbors = [];
+                for (let i = 0; i < dataset.length; i++) {
+                    if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
+                }
+
+                // Se o ponto está em um vácuo de densidade (outlier tridimensional)
+                if (neighbors.length === 0) {
+                    // Verifica se o fator de isolamento principal é a taxa abusiva de reports ou mecânica desumana
+                    if (newPlayer.z > 15) {
+                        return {
+                            codigo: -1,
+                            veredicto: "TRAPAÇA DETECTADA // CLOSER CHEATER",
+                            cor: "text-[#ff4655]",
+                            detalhe: "O comportamento mecânico tenta emular um jogador radiante, porém o volume crítico de denúncias da comunidade (REPORTS) isolou o perfil espacialmente.",
+                            acao: "BANIMENTO VIA VANGUARD ATIVADO"
+                        };
+                    }
+                    return {
+                        codigo: -1,
+                        veredicto: "TRAPAÇA DETECTADA // SOFTWARE DE MIRA",
+                        cor: "text-[#ff4655]",
+                        detalhe: "Combinação matemática impossível. Tempo de reação de hardware automatizado (Aimbot/Triggerbot) com precisão sobre-humana.",
+                        acao: "CONTA SUSPENSA PERMANENTEMENTE"
+                    };
+                }
+
+                let maisProximoIdx = neighbors[0];
+                let menorDist = this.distance3D(newPlayer, dataset[neighbors[0]]);
+                for (let k = 1; k < neighbors.length; k++) {
+                    let dist = this.distance3D(newPlayer, dataset[neighbors[k]]);
+                    if (dist < menorDist) {
+                        menorDist = dist;
+                        maisProximoIdx = neighbors[k];
+                    }
+                }
+
+                const clusterPertencente = currentLabels[maisProximoIdx];
+                if (clusterPertencente === -1) {
+                    return {
+                        codigo: -1,
+                        veredicto: "PERFIL ANÔMALO // COMPORTAMENTO IRREGULAR",
+                        cor: "text-yellow-500",
+                        detalhe: "O utilizador orbita uma densidade instável de dados. Apresenta picos suspeitos seguidos de quedas drásticas de performance.",
+                        acao: "ENVIAR PERFIL PARA SISTEMA OVERWATCH (ANÁLISE MANUAL DE REPLAY)"
+                    };
+                } else if (clusterPertencente === 1) {
+                    return {
+                        codigo: 1,
+                        veredicto: "STATUS VERIFICADO // INTEGRALIDADE CONFIRMADA",
+                        cor: "text-green-400",
+                        detalhe: "Assinatura comportamental compatível com a densidade populacional: Elos Iniciais (Ferro ao Ouro). Baixo índice de denúncias.",
+                        acao: "SISTEMA SEGURO // NENHUMA AÇÃO"
+                    };
+                } else {
+                    return {
+                        codigo: 2,
+                        veredicto: "STATUS VERIFICADO // JOGADOR RADIANTE / IMORTAL",
+                        cor: "text-[#00f3ff]",
+                        detalhe: "Performance de alta fidelidade. Tempo de reação veloz humano e precisão aguçada, porém perfeitamente distribuído no cluster estável de atletas de eSports.",
+                        acao: "SISTEMA SEGURO // CONTA RECONHECIDA COMO ELITE"
+                    };
+                }
+            }
+        }
+
+        // --- BANCO DE DADOS POPULACIONAL DO SERVIDOR (Métricas adaptadas para Valorant)
+        // x: Reação (ms), y: Taxa de HS (%), z: Reports acumulados na sessão
+        const bancoServidor = [
+            // Cluster 1: Jogadores Normais/Casuais (Reação 200-300ms, HS 10-30%, Reports 0-3)
+            { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 },
+            
+            // Cluster 2: Jogadores de Elite/Profissionais (Reação 130-160ms, HS 45-60%, Reports 1-4 devido a inveja/frustração de adversários)
+            { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, { x: 155, y: 52, z: 4 }, { x: 145, y: 58, z: 2 },
+            
+            // Outliers Conhecidos / Ruídos (Cheaters capturados pela estrutura)
+            { x: 15,  y: 99, z: 28 }, // Rage Hacker indisfarçável (Reação de 15ms, 99% HS e 28 denúncias)
+            { x: 142, y: 54, z: 35 }  // Closet Cheater disfarçado (Atira igual a um pro player, mas recebeu 35 denúncias por varar paredes constantemente através de Wallhack)
+        ];
+
+        // Inicialização do modelo Vanguard com parâmetros de tolerância calibrados
+        const EPSILON = 40;
+        const MIN_POINTS = 4;
+        const vanguard = new VanguardDBSCAN(EPSILON, MIN_POINTS);
+        const rotulosServidor = vanguard.fit(bancoServidor);
+
+        // --- INTERATIVIDADE DO FORMULÁRIO ---
+        function verificarJogador() {
+            const x = parseFloat(document.getElementById('inputX').value);
+            const y = parseFloat(document.getElementById('inputY').value);
+            const z = parseFloat(document.getElementById('inputZ').value);
+
+            const jogadorTeste = { x, y, z };
+            const resultado = vanguard.predictNewPlayer(bancoServidor, rotulosServidor, jogadorTeste);
+
+            const terminal = document.getElementById('resultadoTerminal');
+            terminal.innerHTML = `
+                <p class="text-gray-500">// ANALISANDO VETOR DE TELEMETRIA: [REÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
+                <p class="text-gray-400">// CALCULANDO FRONTEIRAS DE DENSIDADE ESPACIAL EM EPS: ${EPSILON}...</p>
+                <div class="pt-2">
+                    <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDICTO: ${resultado.veredicto}</p>
+                    <p class="text-gray-300 mt-1">[ANÁLISE]: ${resultado.detalhe}</p>
+                    <p class="text-gray-400 font-bold mt-1 text-[11px]">> DIRETIVA DE SEGURANÇA: <span class="underline">${resultado.acao}</span></p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
