@@ -116,46 +116,49 @@
             }
 
             predictNewPlayer(dataset, currentLabels, newPlayer) {
+                // FASE 1: FILTROS DE SEGURANÇA IMEDIATOS (HEURÍSTICA DE ASSINATURA DE TRAPAÇA)
+                // Garante a detecção exata mesmo que o ponto encontre vizinhos ruídos antigos no espaço matemático
+                
+                // PRIORIDADE 1: VERIFICAÇÃO DE AIMBOT MECÂNICO
+                if (newPlayer.x <= 50 && newPlayer.y >= 80) {
+                    return {
+                        codigo: -1,
+                        veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
+                        cor: "text-[#ff4655]",
+                        detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual humano. Assinatura biométrica compatível com gatilhos automatizados e auxílio de mira por hardware.",
+                        acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
+                    };
+                }
+
+                // PRIORIDADE 2: WALLHACK / CLOSET CHEATER POR EXCESSO DE DENÚNCIAS COLETIVAS
+                if (newPlayer.z >= 15) {
+                    return {
+                        codigo: -1,
+                        veredicto: "PROVÁVEL TRAPAÇA DETECTADA // WALLHACK / CLOSET CHEATER",
+                        cor: "text-[#ff4655]",
+                        detalhe: "Suspeitas que o jogador esteja utilizando software auxiliar externo para obter informações privilegiadas do mapa e dos oponentes, resultando em uma taxa de denúncias anormalmente elevada.",
+                        acao: "Análise manual de partidas para confirmação"
+                    };
+                }
+
+                // FASE 2: CLASSIFICAÇÃO DE DENSIDADE GEOMÉTRICA (DBSCAN CORE)
                 let neighbors = [];
                 for (let i = 0; i < dataset.length; i++) {
                     if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
                 }
 
-                // Se cair em vácuo de densidade (Vizinhos estatísticos === 0)
                 if (neighbors.length === 0) {
-                    
-                    // PRIORIDADE 1: VERIFICAÇÃO DE AIMBOT MECÂNICO
-                    if (newPlayer.x <= 50 && newPlayer.y >= 80) {
-                        return {
-                            codigo: -1,
-                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
-                            cor: "text-[#ff4655]",
-                            detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual humano. Assinatura biométrica compatível com gatilhos automatizados e auxílio de mira por hardware.",
-                            acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
-                        };
-                    }
-
-                    // PRIORIDADE 2: WALLHACK POR EXCESSO DE DENÚNCIAS
-                    if (newPlayer.z >= 15) {
-                        return {
-                            codigo: -1,
-                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // WALLHACK",
-                            cor: "text-[#ff4655]",
-                            detalhe: "Suspeitas que o jogador esteja utilizando software auxiliar externo para obter informações privilegiadas do mapa e dos oponentes, resultando em uma taxa de denúncias anormalmente elevada.",
-                            acao: "Análise manual de partidas para confirmação"
-                        };
-                    }
-
-                    // CASO SEJA UM OUTLIER GENÉRICO
+                    // CASO SEJA UM OUTLIER ISOLADO DESCONHECIDO
                     return {
                         codigo: -1,
                         veredicto: "COMPORTAMENTO ISOLADO // DESVIO DE REGULARIDADE",
                         cor: "text-yellow-500",
-                        detalhe: "Dados não se encaixam em caráter conhecido, realizar novas análises com mais amostras.",
+                        detalhe: "Dados operam em uma lacuna espacial estatística absoluta. Dados distantes de qualquer ecossistema verificado.",
                         acao: "ISOLAR USUÁRIO EM FLAG DE MONITORAMENTO INTERNO"
                     };
                 }
 
+                // Identifica o vizinho mais próximo para herdar a classe
                 let maisProximoIdx = neighbors[0];
                 let menorDist = this.distance3D(newPlayer, dataset[neighbors[0]]);
                 for (let k = 1; k < neighbors.length; k++) {
