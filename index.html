@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VALORANT // Anti-Cheat Protocol (DBSCAN)</title>
+    <title>VALORANT // Anti-Cheat Protocol (DBSCAN Puro)</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#11141a] text-gray-200 font-sans min-h-screen flex items-center justify-center p-4">
@@ -11,7 +11,7 @@
     <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">
 
         <div class="mb-6 border-b border-gray-700 pb-4">
-            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Análise de possível trapaça</h1>
+            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Análise Estatística DBSCAN (Sem Heurística)</h1>
             <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Dados Utilizados: Reação (ms) × Headshot (%) × Reports</p>
         </div>
 
@@ -36,7 +36,7 @@
             </div>
 
             <button onclick="verificarJogador()" class="w-full bg-[#ff4655] hover:bg-[#e63e4b] text-white font-black py-2.5 px-4 rounded-none transition text-xs uppercase tracking-widest mt-2 border border-[#ff4655]">
-                Analisar Jogador
+                Analisar via DBSCAN
             </button>
         </div>
 
@@ -53,7 +53,6 @@
     </div>
 
     <script>
-
         class VanguardDBSCAN {
             constructor(eps, minPoints) {
                 this.eps = eps;
@@ -116,47 +115,20 @@
             }
 
             predictNewPlayer(dataset, currentLabels, newPlayer) {
-                //X - Tempo de reação 
-                //Y - Taxa de headshot
-                //Z - Reports recebidos
-
-                if (newPlayer.x <= 50 || newPlayer.y >= 80) {
-                    return {
-                        codigo: -1,
-                        veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
-                        cor: "text-[#ff4655]",
-                        detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual humano. Assinatura biométrica compatível com gatilhos automatizados e auxílio de mira por hardware.",
-                        acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
-                    };
-                }
-
-                if (newPlayer.z >= 15) {
-                    return {
-                        codigo: -1,
-                        veredicto: "PROVÁVEL TRAPAÇA DETECTADA // WALLHACK / CLOSET CHEATER",
-                        cor: "text-[#ff4655]",
-                        detalhe: "Suspeitas que o jogador esteja utilizando software auxiliar externo para obter informações privilegiadas do mapa e dos oponentes, resultando em uma taxa de denúncias anormalmente elevada.",
-                        acao: "Análise manual de partidas para confirmação"
-                    };
-                }
-
                 let neighbors = [];
                 for (let i = 0; i < dataset.length; i++) {
                     if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
                 }
 
                 if (neighbors.length === 0) {
-
                     return {
-                        codigo: -1,
-                        veredicto: "COMPORTAMENTO ISOLADO // DESVIO DE REGULARIDADE",
+                        veredicto: "OUTLIER DETECTADO // COMPORTAMENTO INÉDITO",
                         cor: "text-yellow-500",
-                        detalhe: "Dados operam em uma lacuna espacial estatística absoluta. Dados distantes de qualquer ecossistema verificado.",
-                        acao: "ISOLAR USUÁRIO EM FLAG DE MONITORAMENTO INTERNO"
+                        detalhe: "Os parâmetros informados estão isolados em uma lacuna espacial do gráfico. Nenhuma proximidade estatística com padrões conhecidos.",
+                        acao: "ISOLAR USUÁRIO PARA ANÁLISE FORENSE DE REPLAY"
                     };
                 }
 
-                // Identifica o vizinho mais próximo para herdar a classe
                 let maisProximoIdx = neighbors[0];
                 let menorDist = this.distance3D(newPlayer, dataset[neighbors[0]]);
                 for (let k = 1; k < neighbors.length; k++) {
@@ -168,29 +140,34 @@
                 }
 
                 const clusterPertencente = currentLabels[maisProximoIdx];
-                if (clusterPertencente === -1) {
+
+                if (clusterPertencente === 1) {
                     return {
-                        codigo: -1,
-                        veredicto: "PERFIL ANÔMALO // COMPORTAMENTO SUSPEITO",
-                        cor: "text-yellow-500",
-                        detalhe: "Comportamento suspeito mas sem evidências suficientes para alegar trapaça, seguir monitoramento.",
-                        acao: "ENVIAR PARTIDAS PARA ANÁLISE COMPLEMENTAR"
-                    };
-                } else if (clusterPertencente === 1) {
-                    return {
-                        codigo: 1,
-                        veredicto: "STATUS VERIFICADO // ECOSSISTEMA PADRÃO",
+                        veredicto: "STATUS VERIFICADO // ECOSSISTEMA COMUM",
                         cor: "text-green-400",
-                        detalhe: "Assinatura mecânica estável e perfeitamente integrada ao cluster densamente povoado de Elos Iniciais/Intermediários (Ferro ao Ouro).",
+                        detalhe: "Classificado matematicamente no Cluster 1 (Alta densidade de jogadores casuais e elos intermediários).",
                         acao: "INTEGRIDADE CONFIRMADA // NENHUMA AÇÃO"
+                    };
+                } else if (clusterPertencente === 2) {
+                    return {
+                        veredicto: "STATUS VERIFICADO // ATLETA DE ELITE / RADIANTE",
+                        cor: "text-[#00f3ff]",
+                        detalhe: "Classificado matematicamente no Cluster 2 (Zona compacta de tempos de reação baixos e precisão profissional legítima).",
+                        acao: "INTEGRIDADE CONFIRMADA // CONTA REGISTRADA COMO ALTA PERFORMANCE"
+                    };
+                } else if (clusterPertencente === 3) {
+                    return {
+                        veredicto: "TRAPAÇA CONFIRMADA VIA DENSIDADE // PROTOCOLO VANGUARD",
+                        cor: "text-[#ff4655]",
+                        detalhe: "Classificado matematicamente no Cluster 3. Assinatura espacial idêntica à nuvem de dados densa gerada por softwares de AIMBOT conhecidos.",
+                        acao: "CONTA SUSPENSA PERMANENTEMENTE VIA BANIMENTO ALGORÍTMICO"
                     };
                 } else {
                     return {
-                        codigo: 2,
-                        veredicto: "STATUS VERIFICADO // JOGADOR RADIANTE / ELITE",
-                        cor: "text-[#00f3ff]",
-                        detalhe: "Performance de altíssima precisão técnica. Padrão compatível com a zona compacta de atletas profissionais de eSports e nível Radiante.",
-                        acao: "INTEGRIDADE CONFIRMADA // CONTA RECONHECIDA COMO ALTA PERFORMANCE"
+                        veredicto: "COMPORTAMENTO SUSPEITO // ANOMALIA PERTO DE RUÍDO",
+                        cor: "text-orange-400",
+                        detalhe: "Os dados orbitam a periferia do gráfico, aproximando-se de ocorrências isoladas de trapaças antigas de padrão volátil.",
+                        acao: "ENVIAR PARTIDAS PARA ANÁLISE COMPLEMENTAR"
                     };
                 }
             }
@@ -198,18 +175,19 @@
 
         const bancoServidor = [
             { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, 
-            { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, 
-            { x: 245, y: 19, z: 1 }, { x: 255, y: 21, z: 2 }, { x: 265, y: 14, z: 0 }, 
-            { x: 230, y: 25, z: 1 }, { x: 275, y: 11, z: 2 }, { x: 225, y: 20, z: 4 }, 
-            { x: 242, y: 17, z: 1 }, { x: 258, y: 23, z: 0 }, { x: 262, y: 13, z: 1 },
+            { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, { x: 245, y: 19, z: 1 }, 
+            { x: 255, y: 21, z: 2 }, { x: 230, y: 25, z: 1 }, { x: 242, y: 17, z: 1 }, 
+
             { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, 
-            { x: 155, y: 52, z: 4 }, { x: 145, y: 58, z: 2 }, { x: 142, y: 51, z: 3 }, 
-            { x: 138, y: 53, z: 1 }, { x: 148, y: 49, z: 2 }, { x: 152, y: 56, z: 5 }, 
-            { x: 132, y: 54, z: 2 }, { x: 146, y: 47, z: 0 }, { x: 141, y: 52, z: 3 },
+            { x: 145, y: 58, z: 2 }, { x: 142, y: 51, z: 3 }, { x: 138, y: 53, z: 1 }, 
+            { x: 148, y: 49, z: 2 }, { x: 141, y: 52, z: 3 }, { x: 144, y: 50, z: 2 },
+
             { x: 15,  y: 99, z: 28 }, 
             { x: 12,  y: 96, z: 34 }, 
-            { x: 142, y: 54, z: 35 }, 
-            { x: 148, y: 51, z: 42 }, 
+            { x: 14,  y: 98, z: 30 }, 
+            { x: 16,  y: 95, z: 32 },
+            { x: 13,  y: 97, z: 29 },
+
             { x: 395, y: 3,  z: 6  }, 
             { x: 410, y: 5,  z: 9  }  
         ];
@@ -231,10 +209,10 @@
 
             const terminal = document.getElementById('resultadoTerminal');
             terminal.innerHTML = `
-                <p class="text-gray-500">// ANALISANDO DADOS COLETADOS: [REAÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
+                <p class="text-gray-500">// PROCESSANDO ESPAÇO GEOMÉTRICO DBSCAN...</p>
                 <div class="pt-2">
                     <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDITO: ${resultado.veredicto}</p>
-                    <p class="text-gray-300 mt-1">[ANÁLISE]: ${resultado.detalhe}</p>
+                    <p class="text-gray-300 mt-1">[ANÁLISE MATEMÁTICA]: ${resultado.detalhe}</p>
                     <p class="text-gray-400 font-bold mt-1 text-[11px]">> DIRETIVA DE SEGURANÇA: <span class="underline">${resultado.acao}</span></p>
                 </div>
             `;
