@@ -11,7 +11,7 @@
     <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">
 
         <div class="mb-6 border-b border-gray-700 pb-4">
-            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Analise de possível trapaça</h1>
+            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Análise de possível trapaça</h1>
             <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Dados Utilizados: Reação (ms) × Headshot (%) × Reports</p>
         </div>
 
@@ -23,15 +23,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tempo de Reação (ms):</label>
-                    <input type="number" id="inputX" value="145" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                    <input type="number" id="inputX" value="15" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Taxa de HS (%):</label>
-                    <input type="number" id="inputY" value="48" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Taxa de HS (%):</label>
+                    <input type="number" id="inputY" value="98" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Reports Recebidos:</label>
-                    <input type="number" id="inputZ" value="2" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Reports Recebidos:</label>
+                    <input type="number" id="inputZ" value="30" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
                 </div>
             </div>
 
@@ -121,30 +121,37 @@
                     if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
                 }
 
+                // Se cair em vácuo de densidade (Vizinhos estatísticos === 0)
                 if (neighbors.length === 0) {
+                    
+                    // PRIORIDADE 1: VERIFICAÇÃO DE AIMBOT MECÂNICO
+                    if (newPlayer.x <= 50 && newPlayer.y >= 80) {
+                        return {
+                            codigo: -1,
+                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
+                            cor: "text-[#ff4655]",
+                            detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual humano. Assinatura biométrica compatível com gatilhos automatizados e auxílio de mira por hardware.",
+                            acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
+                        };
+                    }
+
+                    // PRIORIDADE 2: WALLHACK POR EXCESSO DE DENÚNCIAS
                     if (newPlayer.z >= 15) {
                         return {
                             codigo: -1,
                             veredicto: "PROVÁVEL TRAPAÇA DETECTADA // WALLHACK",
                             cor: "text-[#ff4655]",
                             detalhe: "Suspeitas que o jogador esteja utilizando software auxiliar externo para obter informações privilegiadas do mapa e dos oponentes, resultando em uma taxa de denúncias anormalmente elevada.",
-                            acao: "Análise manual de partidas para conifmação"
+                            acao: "Análise manual de partidas para confirmação"
                         };
                     }
-                    if (newPlayer.x <= 50 && newPlayer.y >= 85) {
-                        return {
-                            codigo: -1,
-                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
-                            cor: "text-[#ff4655]",
-                            detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual, recomendado análise de históricos anteriores e tempo de conta antes de prosseguir com o banimento.",
-                            acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
-                        };
-                    }
+
+                    // CASO SEJA UM OUTLIER GENÉRICO
                     return {
                         codigo: -1,
                         veredicto: "COMPORTAMENTO ISOLADO // DESVIO DE REGULARIDADE",
                         cor: "text-yellow-500",
-                        detalhe: "Dados não se encaixam em caráter conhecido, realizar novas análise com mais amostras.",
+                        detalhe: "Dados não se encaixam em caráter conhecido, realizar novas análises com mais amostras.",
                         acao: "ISOLAR USUÁRIO EM FLAG DE MONITORAMENTO INTERNO"
                     };
                 }
@@ -165,7 +172,7 @@
                         codigo: -1,
                         veredicto: "PERFIL ANÔMALO // COMPORTAMENTO SUSPEITO",
                         cor: "text-yellow-500",
-                        detalhe: "Comportamento suspeito mas sem evidencias sulficientes para alegar trapaça, seguir monitoramento.",
+                        detalhe: "Comportamento suspeito mas sem evidências suficientes para alegar trapaça, seguir monitoramento.",
                         acao: "ENVIAR PARTIDAS PARA ANÁLISE COMPLEMENTAR"
                     };
                 } else if (clusterPertencente === 1) {
@@ -188,44 +195,31 @@
             }
         }
 
-        // --- BANCO DE DADOS EXPANDIDO DO SERVIDOR (Mais Amostras = Maior Precisão Espacial)
-        // x: Reação (ms), y: Taxa de HS (%), z: Reports acumulados
+        // --- BANCO DE DADOS EXPANDIDO DO SERVIDOR ---
         const bancoServidor = [
-            // ==========================================
-            // CLUSTER 1: JOGADORES COMUNS / CASUAIS (Elos Iniciais)
-            // ==========================================
             { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, 
             { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, 
             { x: 245, y: 19, z: 1 }, { x: 255, y: 21, z: 2 }, { x: 265, y: 14, z: 0 }, 
             { x: 230, y: 25, z: 1 }, { x: 275, y: 11, z: 2 }, { x: 225, y: 20, z: 4 }, 
             { x: 242, y: 17, z: 1 }, { x: 258, y: 23, z: 0 }, { x: 262, y: 13, z: 1 },
-
-            // ==========================================
-            // CLUSTER 2: COMPARTIMENTO PRO-PLAYERS / RADIANTE (Fidelidade Mecânica)
-            // ==========================================
             { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, 
             { x: 155, y: 52, z: 4 }, { x: 145, y: 58, z: 2 }, { x: 142, y: 51, z: 3 }, 
             { x: 138, y: 53, z: 1 }, { x: 148, y: 49, z: 2 }, { x: 152, y: 56, z: 5 }, 
             { x: 132, y: 54, z: 2 }, { x: 146, y: 47, z: 0 }, { x: 141, y: 52, z: 3 },
-
-            // ==========================================
-            // RUÍDOS REGISTRADOS / HISTÓRICO DE BANIMENTOS E BOTAFK
-            // ==========================================
-            { x: 15,  y: 99, z: 28 }, // Blatant Hacker (Aimbot Agressivo)
-            { x: 12,  y: 96, z: 34 }, // Spinbot / Triggerbot Instantâneo
-            { x: 142, y: 54, z: 35 }, // Closet Cheater (Wallhack disfarçando mira)
-            { x: 148, y: 51, z: 42 }, // Outro Closet Cheater denunciado excessivamente
-            { x: 395, y: 3,  z: 6  }, // Bot AFK (Script de farm de XP)
-            { x: 410, y: 5,  z: 9  }  // Conta automatizada inativa
+            { x: 15,  y: 99, z: 28 }, 
+            { x: 12,  y: 96, z: 34 }, 
+            { x: 142, y: 54, z: 35 }, 
+            { x: 148, y: 51, z: 42 }, 
+            { x: 395, y: 3,  z: 6  }, 
+            { x: 410, y: 5,  z: 9  }  
         ];
 
-        // Hiperparâmetros recalibrados para a nova densidade populacional
         const EPSILON = 40;
         const MIN_POINTS = 4;
         const vanguard = new VanguardDBSCAN(EPSILON, MIN_POINTS);
         const rotulosServidor = vanguard.fit(bancoServidor);
 
-        // Atualiza dinamicamente o número de amostras no rodapé para a banca ver
+        // Atualiza a interface ao carregar
         document.getElementById('contadorDados').innerText = `Amostras carregadas: ${bancoServidor.length}`;
 
         // --- INTERATIVIDADE DO FORMULÁRIO ---
