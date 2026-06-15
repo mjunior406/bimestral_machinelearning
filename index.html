@@ -8,11 +8,11 @@
 </head>
 <body class="bg-[#11141a] text-gray-200 font-sans min-h-screen flex items-center justify-center p-4">
 
-    <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">>
+    <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">
 
         <div class="mb-6 border-b border-gray-700 pb-4">
-            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Protocolo de Integridade // VALORANT</h1>
-            <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Análise Tridimensional: Reação (ms) × Headshot (%) × Reports</p>
+            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Analise de possível trapaça</h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Dados Utilizados: Reação (ms) × Headshot (%) × Reports</p>
         </div>
 
         <div class="space-y-4 mb-6 bg-[#121820] p-4 border border-gray-800">
@@ -22,7 +22,7 @@
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-450 uppercase tracking-wider mb-1">Tempo de Reação (ms):</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Tempo de Reação (ms):</label>
                     <input type="number" id="inputX" value="145" class="w-full bg-[#1b222c] border border-gray-700 rounded-none p-2 text-white font-mono text-sm focus:border-[#ff4655] outline-none">
                 </div>
                 <div>
@@ -48,6 +48,7 @@
 
         <div class="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[10px] text-gray-500 font-mono uppercase">
             <span>Algoritmo: DBSCAN (JavaScript)</span>
+            <span id="contadorDados" class="text-gray-400 font-bold">Amostras carregadas: --</span>
         </div>
     </div>
 
@@ -59,7 +60,6 @@
                 this.minPoints = minPoints;
             }
 
-            // Distância Euclidiana em Espaço 3D (X: Reação, Y: HS%, Z: Reports)
             distance3D(p1, p2) {
                 return Math.sqrt(
                     Math.pow(p1.x - p2.x, 2) + 
@@ -97,17 +97,16 @@
                 }
             }
 
-            // Varre a população do servidor para mapear as densidades legítimas
             fit(dataset) {
                 const n = dataset.length;
-                const labels = new Array(n).fill(0); // 0 = Não visitado, -1 = Ruído, >0 = Cluster ID
+                const labels = new Array(n).fill(0); 
                 let clusterId = 0;
 
                 for (let i = 0; i < n; i++) {
                     if (labels[i] !== 0) continue;
                     let neighbors = this.regionQuery(dataset, i);
                     if (neighbors.length < this.minPoints) {
-                        labels[i] = -1; // Ruído/Anomalia inicial
+                        labels[i] = -1; 
                     } else {
                         clusterId++;
                         this.expandCluster(dataset, labels, i, neighbors, clusterId);
@@ -116,31 +115,37 @@
                 return labels;
             }
 
-            // Classifica o input manual dinâmico enviado na apresentação
             predictNewPlayer(dataset, currentLabels, newPlayer) {
                 let neighbors = [];
                 for (let i = 0; i < dataset.length; i++) {
                     if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
                 }
 
-                // Se o ponto está em um vácuo de densidade (outlier tridimensional)
                 if (neighbors.length === 0) {
-                    // Verifica se o fator de isolamento principal é a taxa abusiva de reports ou mecânica desumana
-                    if (newPlayer.z > 15) {
+                    if (newPlayer.z >= 15) {
                         return {
                             codigo: -1,
-                            veredicto: "TRAPAÇA DETECTADA // CLOSER CHEATER",
+                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // WALLHACK",
                             cor: "text-[#ff4655]",
-                            detalhe: "O comportamento mecânico tenta emular um jogador radiante, porém o volume crítico de denúncias da comunidade (REPORTS) isolou o perfil espacialmente.",
-                            acao: "BANIMENTO VIA VANGUARD ATIVADO"
+                            detalhe: "Suspeitas que o jogador esteja utilizando software auxiliar externo para obter informações privilegiadas do mapa e dos oponentes, resultando em uma taxa de denúncias anormalmente elevada.",
+                            acao: "Análise manual de partidas para conifmação"
+                        };
+                    }
+                    if (newPlayer.x <= 50 && newPlayer.y >= 85) {
+                        return {
+                            codigo: -1,
+                            veredicto: "PROVÁVEL TRAPAÇA DETECTADA // AIMBOT",
+                            cor: "text-[#ff4655]",
+                            detalhe: "Tempo de reação e taxa de acerto de headshot fora do usual, recomendado análise de históricos anteriores e tempo de conta antes de prosseguir com o banimento.",
+                            acao: "CONTA SUSPENSA PERMANENTEMENTE VIA VANGUARD"
                         };
                     }
                     return {
                         codigo: -1,
-                        veredicto: "TRAPAÇA DETECTADA // SOFTWARE DE MIRA",
-                        cor: "text-[#ff4655]",
-                        detalhe: "Combinação matemática impossível. Tempo de reação de hardware automatizado (Aimbot/Triggerbot) com precisão sobre-humana.",
-                        acao: "CONTA SUSPENSA PERMANENTEMENTE"
+                        veredicto: "COMPORTAMENTO ISOLADO // DESVIO DE REGULARIDADE",
+                        cor: "text-yellow-500",
+                        detalhe: "Dados não se encaixam em caráter conhecido, realizar novas análise com mais amostras.",
+                        acao: "ISOLAR USUÁRIO EM FLAG DE MONITORAMENTO INTERNO"
                     };
                 }
 
@@ -158,50 +163,70 @@
                 if (clusterPertencente === -1) {
                     return {
                         codigo: -1,
-                        veredicto: "PERFIL ANÔMALO // COMPORTAMENTO IRREGULAR",
+                        veredicto: "PERFIL ANÔMALO // COMPORTAMENTO SUSPEITO",
                         cor: "text-yellow-500",
-                        detalhe: "O utilizador orbita uma densidade instável de dados. Apresenta picos suspeitos seguidos de quedas drásticas de performance.",
-                        acao: "ENVIAR PERFIL PARA SISTEMA OVERWATCH (ANÁLISE MANUAL DE REPLAY)"
+                        detalhe: "Comportamento suspeito mas sem evidencias sulficientes para alegar trapaça, seguir monitoramento.",
+                        acao: "ENVIAR PARTIDAS PARA ANÁLISE COMPLEMENTAR"
                     };
                 } else if (clusterPertencente === 1) {
                     return {
                         codigo: 1,
-                        veredicto: "STATUS VERIFICADO // JOGADOR COMUM",
+                        veredicto: "STATUS VERIFICADO // ECOSSISTEMA PADRÃO",
                         cor: "text-green-400",
-                        detalhe: "Assinatura comportamental compatível com a densidade populacional: Elos Iniciais (Ferro ao Ouro). Baixo índice de denúncias.",
-                        acao: "SISTEMA SEGURO // NENHUMA AÇÃO"
+                        detalhe: "Assinatura mecânica estável e perfeitamente integrada ao cluster densamente povoado de Elos Iniciais/Intermediários (Ferro ao Ouro).",
+                        acao: "INTEGRIDADE CONFIRMADA // NENHUMA AÇÃO"
                     };
                 } else {
                     return {
                         codigo: 2,
-                        veredicto: "STATUS VERIFICADO // JOGADOR RADIANTE",
+                        veredicto: "STATUS VERIFICADO // JOGADOR RADIANTE / ELITE",
                         cor: "text-[#00f3ff]",
-                        detalhe: "Performance de alta fidelidade. Tempo de reação veloz humano e precisão aguçada, porém perfeitamente distribuído no cluster estável de atletas de eSports.",
-                        acao: "SISTEMA SEGURO // CONTA RECONHECIDA COMO ELITE"
+                        detalhe: "Performance de altíssima precisão técnica. Padrão compatível com a zona compacta de atletas profissionais de eSports e nível Radiante.",
+                        acao: "INTEGRIDADE CONFIRMADA // CONTA RECONHECIDA COMO ALTA PERFORMANCE"
                     };
                 }
             }
         }
 
-        // --- BANCO DE DADOS POPULACIONAL DO SERVIDOR (Métricas adaptadas para Valorant)
-        // x: Reação (ms), y: Taxa de HS (%), z: Reports acumulados na sessão
+        // --- BANCO DE DADOS EXPANDIDO DO SERVIDOR (Mais Amostras = Maior Precisão Espacial)
+        // x: Reação (ms), y: Taxa de HS (%), z: Reports acumulados
         const bancoServidor = [
-            // Cluster 1: Jogadores Normais/Casuais (Reação 200-300ms, HS 10-30%, Reports 0-3)
-            { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 },
-            
-            // Cluster 2: Jogadores de Elite/Profissionais (Reação 130-160ms, HS 45-60%, Reports 1-4 devido a inveja/frustração de adversários)
-            { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, { x: 155, y: 52, z: 4 }, { x: 145, y: 58, z: 2 },
-            
-            // Outliers Conhecidos / Ruídos (Cheaters capturados pela estrutura)
-            { x: 15,  y: 99, z: 28 }, // Rage Hacker indisfarçável (Reação de 15ms, 99% HS e 28 denúncias)
-            { x: 142, y: 54, z: 35 }  // Closet Cheater disfarçado (Atira igual a um pro player, mas recebeu 35 denúncias por varar paredes constantemente através de Wallhack)
+            // ==========================================
+            // CLUSTER 1: JOGADORES COMUNS / CASUAIS (Elos Iniciais)
+            // ==========================================
+            { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, 
+            { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, 
+            { x: 245, y: 19, z: 1 }, { x: 255, y: 21, z: 2 }, { x: 265, y: 14, z: 0 }, 
+            { x: 230, y: 25, z: 1 }, { x: 275, y: 11, z: 2 }, { x: 225, y: 20, z: 4 }, 
+            { x: 242, y: 17, z: 1 }, { x: 258, y: 23, z: 0 }, { x: 262, y: 13, z: 1 },
+
+            // ==========================================
+            // CLUSTER 2: COMPARTIMENTO PRO-PLAYERS / RADIANTE (Fidelidade Mecânica)
+            // ==========================================
+            { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, 
+            { x: 155, y: 52, z: 4 }, { x: 145, y: 58, z: 2 }, { x: 142, y: 51, z: 3 }, 
+            { x: 138, y: 53, z: 1 }, { x: 148, y: 49, z: 2 }, { x: 152, y: 56, z: 5 }, 
+            { x: 132, y: 54, z: 2 }, { x: 146, y: 47, z: 0 }, { x: 141, y: 52, z: 3 },
+
+            // ==========================================
+            // RUÍDOS REGISTRADOS / HISTÓRICO DE BANIMENTOS E BOTAFK
+            // ==========================================
+            { x: 15,  y: 99, z: 28 }, // Blatant Hacker (Aimbot Agressivo)
+            { x: 12,  y: 96, z: 34 }, // Spinbot / Triggerbot Instantâneo
+            { x: 142, y: 54, z: 35 }, // Closet Cheater (Wallhack disfarçando mira)
+            { x: 148, y: 51, z: 42 }, // Outro Closet Cheater denunciado excessivamente
+            { x: 395, y: 3,  z: 6  }, // Bot AFK (Script de farm de XP)
+            { x: 410, y: 5,  z: 9  }  // Conta automatizada inativa
         ];
 
-        // Inicialização do modelo Vanguard com parâmetros de tolerância calibrados
+        // Hiperparâmetros recalibrados para a nova densidade populacional
         const EPSILON = 40;
         const MIN_POINTS = 4;
         const vanguard = new VanguardDBSCAN(EPSILON, MIN_POINTS);
         const rotulosServidor = vanguard.fit(bancoServidor);
+
+        // Atualiza dinamicamente o número de amostras no rodapé para a banca ver
+        document.getElementById('contadorDados').innerText = `Amostras carregadas: ${bancoServidor.length}`;
 
         // --- INTERATIVIDADE DO FORMULÁRIO ---
         function verificarJogador() {
@@ -214,7 +239,7 @@
 
             const terminal = document.getElementById('resultadoTerminal');
             terminal.innerHTML = `
-                <p class="text-gray-500">// ANALISANDO DADOS: [REÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
+                <p class="text-gray-500">// ANALISANDO DADOS COLETADOS: [REAÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
                 <div class="pt-2">
                     <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDITO: ${resultado.veredicto}</p>
                     <p class="text-gray-300 mt-1">[ANÁLISE]: ${resultado.detalhe}</p>
