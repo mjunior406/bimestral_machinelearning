@@ -219,10 +219,9 @@
 
             const terminal = document.getElementById('resultadoTerminal');
             terminal.innerHTML = `
-                <p class="text-gray-500">// ANALISANDO VETOR DE TELEMETRIA: [REÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
-                <p class="text-gray-400">// CALCULANDO FRONTEIRAS DE DENSIDADE ESPACIAL EM EPS: ${EPSILON}...</p>
+                <p class="text-gray-500">// ANALISANDO DADOS: [REÇÃO: ${x}ms | HS: ${y}% | REPORTS: ${z}]</p>
                 <div class="pt-2">
-                    <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDICTO: ${resultado.veredicto}</p>
+                    <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDITO: ${resultado.veredicto}</p>
                     <p class="text-gray-300 mt-1">[ANÁLISE]: ${resultado.detalhe}</p>
                     <p class="text-gray-400 font-bold mt-1 text-[11px]">> DIRETIVA DE SEGURANÇA: <span class="underline">${resultado.acao}</span></p>
                 </div>
