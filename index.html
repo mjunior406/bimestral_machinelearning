@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VALORANT // Anti-Cheat Protocol (DBSCAN Puro)</title>
+    <title>VALORANT // Anti-Cheat Protocol (DBSCAN Automático)</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#11141a] text-gray-200 font-sans min-h-screen flex items-center justify-center p-4">
@@ -11,13 +11,13 @@
     <div class="max-w-2xl w-full bg-[#1b222c] p-6 rounded-none border-t-4 border-[#ff4655] shadow-2xl relative overflow-hidden">
 
         <div class="mb-6 border-b border-gray-700 pb-4">
-            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Análise Estatística DBSCAN (Sem Heurística)</h1>
+            <h1 class="text-2xl font-black text-[#ff4655] uppercase tracking-tighter">Análise Estatística DBSCAN (Nuvem/GitHub)</h1>
             <p class="text-gray-400 text-xs uppercase tracking-widest mt-1">Dados Utilizados: Reação (ms) × Headshot (%) × Reports</p>
         </div>
 
         <div class="space-y-4 mb-6 bg-[#121820] p-4 border border-gray-800">
             <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <span class="w-1.5 h-1.5 bg-[#ff4655]"></span> Informar dados do jogador 
+                <span class="w-1.5 h-1.5 bg-[#ff4655]"></span> Informar dados do jogador a analisar
             </h2>
             
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -42,13 +42,13 @@
 
         <div class="border border-gray-800 bg-[#0f141c] p-4 min-h-[120px] flex flex-col justify-center">
             <div id="resultadoTerminal" class="font-mono text-xs space-y-1.5">
-                <p class="text-gray-500 text-center italic">Aguardando dados...</p>
+                <p id="statusCarregamento" class="text-yellow-500 text-center animate-pulse italic">Conectando ao servidor e baixando dataset de 1000 jogadores...</p>
             </div>
         </div>
 
         <div class="mt-4 pt-3 border-t border-gray-800 flex justify-between items-center text-[10px] text-gray-500 font-mono uppercase">
             <span>Algoritmo: DBSCAN (JavaScript)</span>
-            <span id="contadorDados" class="text-gray-400 font-bold">Amostras carregadas: --</span>
+            <span id="contadorDados" class="text-gray-400 font-bold">Amostras carregadas: 0</span>
         </div>
     </div>
 
@@ -82,7 +82,7 @@
                 for (let i = 0; i < neighbors.length; i++) {
                     let neighborIdx = neighbors[i];
                     if (labels[neighborIdx] === -1) labels[neighborIdx] = clusterId;
-                    if (labels[neighborIdx] !== 0) continue;
+                    if (labels[labels[neighborIdx]] !== 0) continue;
                     
                     labels[neighborIdx] = clusterId;
                     let nextNeighbors = this.regionQuery(dataset, neighborIdx);
@@ -173,33 +173,55 @@
             }
         }
 
-        const bancoServidor = [
-            { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, 
-            { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, { x: 245, y: 19, z: 1 }, 
-            { x: 255, y: 21, z: 2 }, { x: 230, y: 25, z: 1 }, { x: 242, y: 17, z: 1 }, 
-
-            { x: 140, y: 50, z: 2 }, { x: 150, y: 55, z: 3 }, { x: 135, y: 48, z: 1 }, 
-            { x: 145, y: 58, z: 2 }, { x: 142, y: 51, z: 3 }, { x: 138, y: 53, z: 1 }, 
-            { x: 148, y: 49, z: 2 }, { x: 141, y: 52, z: 3 }, { x: 144, y: 50, z: 2 },
-
-            { x: 15,  y: 99, z: 28 }, 
-            { x: 12,  y: 96, z: 34 }, 
-            { x: 14,  y: 98, z: 30 }, 
-            { x: 16,  y: 95, z: 32 },
-            { x: 13,  y: 97, z: 29 },
-
-            { x: 395, y: 3,  z: 6  }, 
-            { x: 410, y: 5,  z: 9  }  
-        ];
-
-        const EPSILON = 40;
+        let bancoServidor = [];
+        let rotulosServidor = [];
+        const EPSILON = 60;
         const MIN_POINTS = 4;
         const vanguard = new VanguardDBSCAN(EPSILON, MIN_POINTS);
-        const rotulosServidor = vanguard.fit(bancoServidor);
 
-        document.getElementById('contadorDados').innerText = `Amostras carregadas: ${bancoServidor.length}`;
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('dados.csv')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao carregar o arquivo CSV.');
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    const linhas = text.split('\n');
+                    bancoServidor = [];
+
+                    for (let i = 1; i < linhas.length; i++) {
+                        const linha = linhas[i].trim();
+                        if (!linha) continue;
+
+                        const colunas = linha.split(',');
+                        if (colunas.length >= 3) {
+                            bancoServidor.push({
+                                x: parseFloat(colunas[0]),
+                                y: parseFloat(colunas[1]),
+                                z: parseFloat(colunas[2])
+                            });
+                        }
+                    }
+
+                    if (bancoServidor.length > 0) {
+                        rotulosServidor = vanguard.fit(bancoServidor);
+                        document.getElementById('contadorDados').innerText = `Amostras carregadas: ${bancoServidor.length}`;
+                        document.getElementById('resultadoTerminal').innerHTML = `<p class="text-green-400 text-center">// BASE DE DADOS CARREGADA DO REPOSITÓRIO COM SUCESSO!</p>`;
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('resultadoTerminal').innerHTML = `<p class="text-[#ff4655] text-center">// ERRO CRÍTICO: Não foi possível ler o arquivo 'dados.csv'. Verifique se ele está na mesma pasta.</p>`;
+                });
+        });
 
         function verificarJogador() {
+            if (bancoServidor.length === 0) {
+                alert("A base de dados ainda não foi carregada.");
+                return;
+            }
+
             const x = parseFloat(document.getElementById('inputX').value);
             const y = parseFloat(document.getElementById('inputY').value);
             const z = parseFloat(document.getElementById('inputZ').value);
@@ -209,7 +231,7 @@
 
             const terminal = document.getElementById('resultadoTerminal');
             terminal.innerHTML = `
-                <p class="text-gray-500">// PROCESSANDO ESPAÇO GEOMÉTRICO DBSCAN...</p>
+                <p class="text-gray-500">// PROCESSANDO ESPAÇO GEOMÉTRICO DBSCAN EM ${bancoServidor.length} AMOSTRAS...</p>
                 <div class="pt-2">
                     <p class="font-black text-sm uppercase ${resultado.cor}">> VEREDITO: ${resultado.veredicto}</p>
                     <p class="text-gray-300 mt-1">[ANÁLISE MATEMÁTICA]: ${resultado.detalhe}</p>
