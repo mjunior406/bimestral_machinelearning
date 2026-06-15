@@ -53,7 +53,7 @@
     </div>
 
     <script>
-        // --- CORE ENGINE DO DBSCAN APLICADO A VALORANT ---
+
         class VanguardDBSCAN {
             constructor(eps, minPoints) {
                 this.eps = eps;
@@ -116,10 +116,10 @@
             }
 
             predictNewPlayer(dataset, currentLabels, newPlayer) {
-                // FASE 1: FILTROS DE SEGURANÇA IMEDIATOS (HEURÍSTICA DE ASSINATURA DE TRAPAÇA)
-                // Garante a detecção exata mesmo que o ponto encontre vizinhos ruídos antigos no espaço matemático
-                
-                // PRIORIDADE 1: VERIFICAÇÃO DE AIMBOT MECÂNICO
+                //X - Tempo de reação 
+                //Y - Taxa de headshot
+                //Z - Reports recebidos
+
                 if (newPlayer.x <= 50 && newPlayer.y >= 80) {
                     return {
                         codigo: -1,
@@ -130,7 +130,6 @@
                     };
                 }
 
-                // PRIORIDADE 2: WALLHACK / CLOSET CHEATER POR EXCESSO DE DENÚNCIAS COLETIVAS
                 if (newPlayer.z >= 15) {
                     return {
                         codigo: -1,
@@ -141,14 +140,13 @@
                     };
                 }
 
-                // FASE 2: CLASSIFICAÇÃO DE DENSIDADE GEOMÉTRICA (DBSCAN CORE)
                 let neighbors = [];
                 for (let i = 0; i < dataset.length; i++) {
                     if (this.distance3D(newPlayer, dataset[i]) <= this.eps) neighbors.push(i);
                 }
 
                 if (neighbors.length === 0) {
-                    // CASO SEJA UM OUTLIER ISOLADO DESCONHECIDO
+
                     return {
                         codigo: -1,
                         veredicto: "COMPORTAMENTO ISOLADO // DESVIO DE REGULARIDADE",
@@ -198,7 +196,6 @@
             }
         }
 
-        // --- BANCO DE DADOS EXPANDIDO DO SERVIDOR ---
         const bancoServidor = [
             { x: 240, y: 15, z: 1 }, { x: 260, y: 18, z: 0 }, { x: 220, y: 22, z: 2 }, 
             { x: 270, y: 12, z: 1 }, { x: 250, y: 28, z: 3 }, { x: 235, y: 16, z: 0 }, 
@@ -222,10 +219,8 @@
         const vanguard = new VanguardDBSCAN(EPSILON, MIN_POINTS);
         const rotulosServidor = vanguard.fit(bancoServidor);
 
-        // Atualiza a interface ao carregar
         document.getElementById('contadorDados').innerText = `Amostras carregadas: ${bancoServidor.length}`;
 
-        // --- INTERATIVIDADE DO FORMULÁRIO ---
         function verificarJogador() {
             const x = parseFloat(document.getElementById('inputX').value);
             const y = parseFloat(document.getElementById('inputY').value);
