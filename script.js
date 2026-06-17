@@ -16,7 +16,7 @@ function gerarDataset() {
   // Jogadores normais (~750)
   for (let i = 0; i < 750; i++) {
     dados.push([
-      rand(150, 400),   // reação ms
+      rand(180, 400),   // reação ms
       rand(10, 55),     // headshot %
       randInt(0, 5)     // reports
     ]);
@@ -25,8 +25,8 @@ function gerarDataset() {
   // Jogadores suspeitos (~200)
   for (let i = 0; i < 200; i++) {
     dados.push([
-      rand(50, 120),
-      rand(60, 85),
+      rand(70, 120),
+      rand(60, 75),
       randInt(5, 15)
     ]);
   }
@@ -34,7 +34,7 @@ function gerarDataset() {
   // Cheaters óbvios (~50)
   for (let i = 0; i < 50; i++) {
     dados.push([
-      rand(5, 30),
+      rand(5, 50),
       rand(88, 100),
       randInt(20, 50)
     ]);
